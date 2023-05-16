@@ -1,35 +1,29 @@
-import os
+import argparse
+import openpyxl
+import json
 
-def find_full_name_by_abbreviation(abbreviation):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+def convert_excel_to_json(excel_file, sheet_name, json_file):
+    workbook = openpyxl.load_workbook(excel_file)
+    worksheet = workbook[sheet_name]
 
-    # 遍历当前目录下的所有txt文件
-    for file_name in os.listdir(current_dir):
-        if file_name.endswith(".txt"):
-            full_name = file_name.replace(".txt", "")
+    data = []
 
-            # 使用子序列匹配判断是否匹配
-            if is_subsequence(abbreviation, full_name):
-                return full_name
+    for row in worksheet.iter_rows(min_row=2, values_only=True):
+        record = {
+            'content': row[0].replace('\n', '\n'),
+            'summary': row[1].replace('\n', '\n')
+        }
+        data.append(record)
 
-    return "未找到匹配的全称"
+    with open(json_file, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-def is_subsequence(subseq, seq):
-    subseq_length = len(subseq)
-    seq_length = len(seq)
-    if subseq_length > seq_length:
-        return False
+# 解析命令行参数
+parser = argparse.ArgumentParser(description='Excel to JSON Converter')
+parser.add_argument('excel_file', help='Excel file path')
+parser.add_argument('json_file', help='Output JSON file path')
 
-    i = 0
-    j = 0
-    while i < subseq_length and j < seq_length:
-        if subseq[i] == seq[j]:
-            i += 1
-        j += 1
+args = parser.parse_args()
 
-    return i == subseq_length
-
-# 示例调用
-abbreviation = input("请输入法律简称: ")
-full_name = find_full_name_by_abbreviation(abbreviation)
-print("匹配的全称为:", full_name)
+# 调用转换函数
+convert_excel_to_json(args.excel_file, "Sheet1", args.json_file)
